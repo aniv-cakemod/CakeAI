@@ -1,0 +1,37 @@
+name: Full Windows App Test
+
+on:
+  push:
+    branches:
+      - test/full-windows-app
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-windows-test:
+    name: Build and test Haven on Windows
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Show .NET information
+        run: dotnet --info
+
+      - name: Restore solution
+        run: dotnet restore .\Haven.sln
+
+      - name: Build solution (Release)
+        run: dotnet build .\Haven.sln -c Release --no-restore
+
+      - name: Run full test suite (Release)
+        run: dotnet test .\Haven.sln -c Release --no-build --verbosity normal

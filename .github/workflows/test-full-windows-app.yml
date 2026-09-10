@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: full-windows-app-test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   full-windows-test:
     name: Build and test Haven on Windows

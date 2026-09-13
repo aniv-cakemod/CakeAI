@@ -43,15 +43,17 @@ public static class HavenAppRoutePolicy
         {
             "go" => new(HavenAppRouteKind.Go, HavenSurface.Go),
             "dashboard" => new(HavenAppRouteKind.Dashboard, HavenSurface.Dashboard),
-            "browse" or "browser" => new(HavenAppRouteKind.Browse, HavenSurface.Browse),
+            "browse" or "browser" or "web" => new(HavenAppRouteKind.Browse, HavenSurface.Browse),
             "plan" => new(HavenAppRouteKind.Plan, HavenSurface.Plan),
             "training" => new(HavenAppRouteKind.Training, HavenSurface.Training),
             "automations" => new(HavenAppRouteKind.Automations, HavenSurface.Automations),
             "terminal" => new(HavenAppRouteKind.Terminal, HavenSurface.Terminal),
             "imagine" => new(HavenAppRouteKind.Imagine, HavenSurface.Imagine),
-            "write" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Write),
+            "write" => new(HavenAppRouteKind.Write, HavenSurface.Write),
             "canvas" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Canvas),
             "present" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Present),
+            "data-spreadsheet" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Data),
+            "data-database" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Data),
             "data" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Data),
             "vision" => new(HavenAppRouteKind.Vision, HavenSurface.Vision),
             "play" => new(HavenAppRouteKind.Play, HavenSurface.Play),
@@ -60,6 +62,7 @@ public static class HavenAppRoutePolicy
             "spaces" => new(HavenAppRouteKind.Spaces, HavenSurface.Spaces),
             "boards" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Boards),
             "maps" => new(HavenAppRouteKind.Maps, HavenSurface.Maps),
+            "motion" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Motion),
             "launcher" => new(HavenAppRouteKind.ModeWorkspace, HavenSurface.Launcher),
             _ => new(HavenAppRouteKind.BaseMode, SurfaceFor(app.BaseMode))
         };

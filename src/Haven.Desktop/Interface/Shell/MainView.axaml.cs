@@ -25,6 +25,7 @@ using Haven.Desktop.Views.Pages.ContainerSettings;
 using Haven.Desktop.Views.Pages.ActionGraph;
 using Haven.Desktop.Views.Pages.Go;
 using Haven.Desktop.Views.Pages.Home;
+using Haven.Desktop.Views.Pages.Mail;
 using Haven.Desktop.Views.Pages.Plan;
 using Haven.Desktop.Views.Pages.Play;
 using Haven.Desktop.Views.Pages.ProjectPreview;
@@ -120,6 +121,7 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
     private NewChatPage? _newChatPage;
     private PlanPageViewModel? _planPage;
     private TerminalPage? _terminalPage;
+    private Haven.Desktop.Views.Pages.Mail.MailPage? _mailPage;
     private PlayPage? _playPage;
     private readonly DispatcherTimer _reminderTimer;
     private int _isPollingReminders;
@@ -128,6 +130,8 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
     private WorkspaceTabViewModel? _selectedTab;
     private string _startupStatus = "Starting Haven\u2026";
     private string _searchQuery = string.Empty;
+    private readonly Haven.Desktop.HavenUI.Runtime.TrailingDebouncer _sidebarSearchDebouncer = new(TimeSpan.FromMilliseconds(200));
+    private readonly Haven.Desktop.HavenUI.Runtime.LatestOperationGate _sidebarSearchGate = new();
     private string _commandSearch = string.Empty;
     private bool _isSidebarOpen = true;
     private bool _isCommandPaletteOpen;
@@ -575,7 +579,31 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
     public string SearchQuery
     {
         get => _searchQuery;
-        set { if (SetProperty(ref _searchQuery, value)) _ = RefreshRecentsAsync(CancellationToken.None); }
+        set
+        {
+            if (!SetProperty(ref _searchQuery, value)) return;
+            // Typing stays immediate; the expensive repository refresh is
+            // debounced so "hello" triggers roughly one refresh, and a stale
+            // completion can never overwrite a newer one.
+            var generation = _sidebarSearchGate.Begin();
+            _sidebarSearchDebouncer.Schedule(() =>
+            {
+                if (!_sidebarSearchGate.IsActive(generation)) return;
+                _ = RunSidebarSearchRefreshAsync(generation);
+            });
+        }
+    }
+
+    private async Task RunSidebarSearchRefreshAsync(int generation)
+    {
+        try
+        {
+            await RefreshRecentsAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Sidebar search] {ex}");
+        }
     }
 
     public string CommandSearch
@@ -635,6 +663,7 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
         HavenSurface.Plan => "Haven Plan",
         HavenSurface.Training => "Haven Training",
         HavenSurface.Mesh => "Haven Mesh",
+        HavenSurface.Mail => "Haven Mail",
         _ => "Haven"
     };
 
@@ -817,6 +846,12 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
         return Task.CompletedTask;
     }
 
+    private void OpenMail()
+    {
+        _mailPage ??= new Haven.Desktop.Views.Pages.Mail.MailPage();
+        AddOrSelectTab("mail", "Mail", _mailPage, false, HavenSurface.Mail);
+        ApplyShellVisualState();
+    }
     private void OpenTerminal(bool forceNewTab = false, string? initialDirectory = null)
     {
         var hub = Haven.Desktop.App.Services?.GetService(typeof(TerminalCommandActivityHub)) as TerminalCommandActivityHub;
@@ -1753,6 +1788,9 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
                 case HavenSurface.Translate:
                     await OpenTranslateAsync(false);
                     break;
+                case HavenSurface.Mail:
+                    OpenMail();
+                    break;
                 case HavenSurface.Mesh:
                     OpenMeshDashboard();
                     break;
@@ -2296,13 +2334,23 @@ public sealed partial class MainView : UserControl, INotifyPropertyChanged, IDis
         await RefreshRecentsAsync(CancellationToken.None);
     }
 
-    private Task OpenFileAsync(ContainerDefinition container, WorkspaceFileItemViewModel file)
+    private Task OpenFileAsync(ContainerDefinition container, WorkspaceFileItemViewModel file) => OpenFileAtAsync(container, file, null);
+
+    private Task OpenFileAtAsync(ContainerDefinition container, WorkspaceFileItemViewModel file, CodeRange? range)
     {
         ActivateProject(container);
         var page = new WorkspaceEditorPage(container, CurrentChat.ConversationId, file, _workspaceTools, _workspaceState, _conversations,
-            () => CurrentChat.BranchCurrentAsync(), () => CurrentChat.StopCommand.Execute(null));
+            () => CurrentChat.BranchCurrentAsync(), () => CurrentChat.StopCommand.Execute(null), location => OpenCodeLocationAsync(container, location));
+        if (range is not null) page.NavigateTo(range);
         AddOrSelectTab("file-" + container.Id.ToString("N") + "-" + file.RelativePath.ToLowerInvariant(), file.Name, page, true);
         return Task.CompletedTask;
+    }
+
+    private Task OpenCodeLocationAsync(ContainerDefinition container, CodeLocation location)
+    {
+        if (!location.IsInWorkspace || string.IsNullOrWhiteSpace(container.RootPath)) return Task.CompletedTask;
+        var file = new WorkspaceFileItemViewModel(container.RootPath, location.DisplayPath);
+        return OpenFileAtAsync(container, file, location.Range);
     }
 
     private void OpenContainerSettings()

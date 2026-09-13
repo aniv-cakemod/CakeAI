@@ -1,0 +1,44 @@
+name: Build Revision Windows Preview
+
+on:
+  push:
+    branches:
+      - feature/revision-study-redesign
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-preview:
+    name: Build Windows x64 preview
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out revision branch
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish Windows preview
+        run: dotnet publish .\src\Haven.Desktop\Haven.Desktop.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained true -o .\artifacts\Haven-Revision-Preview
+
+      - name: Verify Haven executable exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path '.\artifacts\Haven-Revision-Preview\Haven.exe')) {
+            throw 'Haven.exe was not produced.'
+          }
+          Get-Item '.\artifacts\Haven-Revision-Preview\Haven.exe' | Format-List Name,Length,LastWriteTime
+
+      - name: Upload Windows preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: Haven-Revision-Windows-x64
+          path: .\artifacts\Haven-Revision-Preview\**
+          if-no-files-found: error
+          retention-days: 14

@@ -9,7 +9,7 @@ public sealed class HavenAppRoutePolicyTests
     private static readonly string[] ExpectedBuiltInKeys =
     [
         "chat", "study", "automations", "terminal", "tasks", "studio", "browse", "plan", "training", "imagine", "canvas",
-        "present", "data", "vision", "play", "translate", "launcher", "go", "dashboard", "write", "mesh", "spaces", "boards", "maps"
+        "present", "data", "vision", "play", "translate", "launcher", "go", "dashboard", "write", "mesh", "spaces", "boards", "maps", "motion"
     ];
 
     public static TheoryData<string, HavenAppRouteKind, HavenSurface> BuiltInRoutes => new()
@@ -24,7 +24,7 @@ public sealed class HavenAppRoutePolicyTests
         { "plan", HavenAppRouteKind.Plan, HavenSurface.Plan },
         { "training", HavenAppRouteKind.Training, HavenSurface.Training },
         { "imagine", HavenAppRouteKind.Imagine, HavenSurface.Imagine },
-        { "write", HavenAppRouteKind.ModeWorkspace, HavenSurface.Write },
+        { "write", HavenAppRouteKind.Write, HavenSurface.Write },
         { "canvas", HavenAppRouteKind.ModeWorkspace, HavenSurface.Canvas },
         { "present", HavenAppRouteKind.ModeWorkspace, HavenSurface.Present },
         { "data", HavenAppRouteKind.ModeWorkspace, HavenSurface.Data },
@@ -37,7 +37,8 @@ public sealed class HavenAppRoutePolicyTests
         { "mesh", HavenAppRouteKind.Mesh, HavenSurface.Mesh },
         { "spaces", HavenAppRouteKind.Spaces, HavenSurface.Spaces },
         { "boards", HavenAppRouteKind.ModeWorkspace, HavenSurface.Boards },
-        { "maps", HavenAppRouteKind.Maps, HavenSurface.Maps }
+        { "maps", HavenAppRouteKind.Maps, HavenSurface.Maps },
+        { "motion", HavenAppRouteKind.ModeWorkspace, HavenSurface.Motion }
     };
 
     [Theory]
@@ -76,5 +77,49 @@ public sealed class HavenAppRoutePolicyTests
 
         Assert.Equal(HavenAppRouteKind.BaseMode, route.Kind);
         Assert.Equal(HavenSurface.Study, route.Surface);
+    }
+
+    [Fact]
+    public void WebAliasUsesTheExistingBrowseRoute()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var app = new ModeDefinition(
+            Guid.NewGuid(), "web", "Web", "", "browse",
+            HavenMode.Studio, "[]", "[]", "[]", "[]", "",
+            ModeSource.Created, ModeInstallState.InstalledByUser, "User", "1.0.0", "[]", now, now);
+
+        var route = HavenAppRoutePolicy.Resolve(app);
+
+        Assert.Equal(HavenAppRouteKind.Browse, route.Kind);
+        Assert.Equal(HavenSurface.Browse, route.Surface);
+    }
+
+    [Fact]
+    public void SpreadsheetAliasUsesTheExistingDataWorkspaceRoute()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var app = new ModeDefinition(
+            Guid.NewGuid(), "data-spreadsheet", "Data Spreadsheet", "", "data-spreadsheet",
+            HavenMode.Studio, "[]", "[]", "[]", "[]", "",
+            ModeSource.Created, ModeInstallState.InstalledByUser, "User", "1.0.0", "[]", now, now);
+
+        var route = HavenAppRoutePolicy.Resolve(app);
+
+        Assert.Equal(HavenAppRouteKind.ModeWorkspace, route.Kind);
+        Assert.Equal(HavenSurface.Data, route.Surface);
+    }
+    [Fact]
+    public void DatabaseAliasUsesTheExistingDataWorkspaceRoute()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var app = new ModeDefinition(
+            Guid.NewGuid(), "data-database", "Data Database", "", "data-database",
+            HavenMode.Studio, "[]", "[]", "[]", "[]", "",
+            ModeSource.Created, ModeInstallState.InstalledByUser, "User", "1.0.0", "[]", now, now);
+
+        var route = HavenAppRoutePolicy.Resolve(app);
+
+        Assert.Equal(HavenAppRouteKind.ModeWorkspace, route.Kind);
+        Assert.Equal(HavenSurface.Data, route.Surface);
     }
 }

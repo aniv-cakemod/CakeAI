@@ -24,11 +24,8 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore Haven Desktop for win-x64
-        run: dotnet restore .\src\Haven.Desktop\Haven.Desktop.csproj -p:TargetFramework=net10.0-windows10.0.19041.0 -r win-x64
-
       - name: Publish Windows preview
-        run: dotnet publish .\src\Haven.Desktop\Haven.Desktop.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained true --no-restore -o .\artifacts\Haven-Revision-Preview
+        run: dotnet publish .\src\Haven.Desktop\Haven.Desktop.csproj -c Release -f net10.0-windows10.0.19041.0 -r win-x64 --self-contained true -o .\artifacts\Haven-Revision-Preview
 
       - name: Verify Haven executable exists
         shell: pwsh

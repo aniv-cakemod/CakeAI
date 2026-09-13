@@ -7,24 +7,26 @@
              x:Class="Haven.Desktop.Views.Shell.MainView"
              x:Name="MainViewRoot">
 
-  <!-- The active New Haven shell is intentionally edge-to-edge. Pages share
-       the window tide; there is no inherited light workspace card around them. -->
+  <!-- Revision preview: use the full-height left sidebar as the primary shell
+       navigation instead of the bottom rail. The bottom rail stays instantiated
+       but hidden so its existing event/state wiring remains available while this
+       layout is reviewed on the feature branch. -->
   <Grid RowDefinitions="*,Auto" Background="Transparent" ClipToBounds="True">
-    <topRail:TopRail x:Name="TopRail" Grid.Row="1" />
+    <topRail:TopRail x:Name="TopRail"
+                     Grid.Row="1"
+                     IsVisible="False" />
 
     <Grid Grid.Row="0"
           ColumnDefinitions="Auto,*"
           ColumnSpacing="18"
-          Margin="24,0,24,20"
+          Margin="24,20,24,20"
           ClipToBounds="True">
 
-      <!-- Classic remains a migration-only control and is never shown by the
-           direct New Haven startup policy. Keeping the named host preserves
-           data migration without allowing its visual composition into New. -->
+      <!-- Primary navigation is now a real left sidebar rather than the bottom bar. -->
       <sidebar:Sidebar x:Name="SidebarControl"
                        Grid.Column="0"
                        Width="314"
-                       IsVisible="False" />
+                       IsVisible="True" />
 
       <ContentControl x:Name="NativeSidebarHost"
                       Grid.Column="0"
@@ -55,7 +57,7 @@
           </Grid>
 
           <!-- Retained as a hidden compatibility host for the existing event
-               wiring. New Haven's page identity lives in the taskbar tab shelf. -->
+               wiring. -->
           <Grid x:Name="ShellContextBar"
                 IsVisible="False"
                 IsHitTestVisible="False">
